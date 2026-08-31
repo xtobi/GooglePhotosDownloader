@@ -11,7 +11,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,9 +41,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) { DownloaderScreen() }
-            }
+            MaterialTheme { Surface(modifier = Modifier.fillMaxSize()) { DownloaderScreen() } }
         }
     }
 
@@ -122,67 +119,83 @@ class MainActivity : ComponentActivity() {
         var selected by remember { mutableStateOf<List<Uri>>(emptyList()) }
         var imported by remember { mutableIntStateOf(0) }; var skipped by remember { mutableIntStateOf(0) }; var zipIndex by remember { mutableIntStateOf(0) }; var totalZips by remember { mutableIntStateOf(0) }; var running by remember { mutableStateOf(false) }
         var step by remember { mutableIntStateOf(0) }
-        var message by remember { mutableStateOf("مرحبًا! سنساعدك خطوة بخطوة لنقل صورك إلى الهاتف.") }
+        var takeoutStep by remember { mutableIntStateOf(0) }
+        var message by remember { mutableStateOf("") }
 
         val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
             selected = uris
-            if (uris.isNotEmpty()) { step = 2; message = "ممتاز! تم اختيار ${uris.size} ملف. اضغط «بدء نقل الصور»." }
+            if (uris.isNotEmpty()) { step = 2; message = "${uris.size} fichier(s) sélectionné(s)." }
         }
 
         fun openTakeout() {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://takeout.google.com/"))
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://takeout.google.com/")))
         }
+
+        fun nextTakeoutStep() {
+            if (takeoutStep < 7) takeoutStep++ else step = 1
+        }
+
+        val instructions = listOf(
+            "Appuyez sur « Tout désélectionner »." to "Ouvrez Google Takeout.",
+            "Cochez « Google Photos »." to "",
+            "Appuyez sur « Tous les albums photo inclus »." to "",
+            "Faites défiler vers le bas." to "",
+            "Appuyez sur « Étape suivante »." to "",
+            "Choisissez « Une seule exportation »." to "",
+            "Appuyez sur « Créer une exportation »." to "",
+            "Téléchargez les fichiers ZIP." to ""
+        )
 
         Column(modifier = Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Top) {
             Text("Google Photos Downloader", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
-            Text("نقل صورك وفيديوهاتك من Google Photos إلى الهاتف")
+            Text("Transférer vos photos et vidéos sur votre téléphone")
             Spacer(Modifier.height(20.dp))
-
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     when (step) {
                         0 -> {
-                            Text("الخطوة 1 من 2", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
-                            Text("أولًا، نحتاج تنزيل نسخة من صورك عبر Google Takeout.")
+                            Text("Télécharger vos photos", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(12.dp))
-                            Text("اضغط الزر بالأسفل، ثم في Google Takeout اختر Google Photos فقط وأنشئ التصدير. عندما تنتهي من تنزيل ملفات ZIP، ارجع إلى هذا التطبيق.")
-                            Spacer(Modifier.height(16.dp))
-                            Button(onClick = { openTakeout() }, modifier = Modifier.fillMaxWidth()) { Text("فتح Google Takeout") }
+                            Button(onClick = { openTakeout(); takeoutStep = 0; step = 3 }, modifier = Modifier.fillMaxWidth()) { Text("Ouvrir Google Takeout") }
                             Spacer(Modifier.height(8.dp))
-                            OutlinedButton(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("لديّ ملفات Takeout بالفعل") }
+                            OutlinedButton(onClick = { step = 1 }, modifier = Modifier.fillMaxWidth()) { Text("J’ai déjà les fichiers ZIP") }
                         }
-                        else -> {
-                            Text("الخطوة 2 من 2", style = MaterialTheme.typography.titleMedium)
-                            Spacer(Modifier.height(8.dp))
-                            Text(message)
+                        1, 2 -> {
+                            Text("Sélection des fichiers", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(10.dp))
+                            if (step == 1) Text("Sélectionnez les fichiers ZIP téléchargés depuis Google Takeout.") else Text(message)
                             Spacer(Modifier.height(12.dp))
-                            if (running) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    CircularProgressIndicator()
-                                    Column { Text("الأرشيف $zipIndex من $totalZips"); Text("تم نقل $imported ملف • تم تخطي $skipped") }
+                            OutlinedButton(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("Sélectionner les fichiers ZIP") }
+                            Spacer(Modifier.height(8.dp))
+                            Button(enabled = selected.isNotEmpty() && !running, onClick = {
+                                running = true; imported = 0; skipped = 0; zipIndex = 0; totalZips = selected.size
+                                extractTakeout(selected, { index, total, count, skippedCount -> zipIndex = index; totalZips = total; imported = count; skipped = skippedCount }) { result ->
+                                    running = false; imported = result.imported; skipped = result.skipped
+                                    message = if (result.error == null) "Transfert terminé : ${result.imported} fichier(s). ${result.skipped} déjà présent(s)." else "Transfert terminé avec quelques erreurs."
                                 }
-                            } else {
-                                OutlinedButton(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("اختيار ملفات Takeout ZIP") }
-                                Spacer(Modifier.height(8.dp))
-                                Button(enabled = selected.isNotEmpty(), onClick = {
-                                    running = true; imported = 0; skipped = 0; zipIndex = 0; totalZips = selected.size; message = "جاري نقل الصور والفيديوهات..."
-                                    extractTakeout(selected, { index, total, count, skippedCount -> zipIndex = index; totalZips = total; imported = count; skipped = skippedCount }) { result ->
-                                        running = false; imported = result.imported; skipped = result.skipped
-                                        message = if (result.error == null) "اكتمل النقل: ${result.imported} ملف. تم تخطي ${result.skipped} ملف مكرر." else "اكتمل مع بعض الأخطاء: ${result.imported} منقول، ${result.skipped} مكرر، ${result.failed} فشل."
-                                    }
-                                }, modifier = Modifier.fillMaxWidth()) { Text("بدء نقل الصور") }
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Commencer le transfert") }
+                            if (running) { Spacer(Modifier.height(16.dp)); CircularProgressIndicator(); Spacer(Modifier.height(8.dp)); Text("Archive $zipIndex sur $totalZips • $imported transféré(s)") }
+                        }
+                        3 -> {
+                            Text("Étape ${takeoutStep + 1}", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(16.dp))
+                            Text(instructions[takeoutStep].first, style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(20.dp))
+                            if (takeoutStep == 0) Text("Dans Google Takeout, commencez par cette action.")
+                            if (takeoutStep == 7) Text("Une fois les fichiers ZIP téléchargés, revenez ici.")
+                            Spacer(Modifier.height(20.dp))
+                            Button(onClick = { if (takeoutStep == 7) step = 1 else nextTakeoutStep() }, modifier = Modifier.fillMaxWidth()) {
+                                Text(if (takeoutStep == 7) "J’ai téléchargé les fichiers ZIP" else "Suivant")
                             }
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(onClick = { step = 0 }, modifier = Modifier.fillMaxWidth()) { Text("Retour") }
                         }
                     }
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text("📁 مكان الحفظ: Pictures/GooglePhotosDownloader")
-            Spacer(Modifier.height(8.dp))
-            Text("يمكنك اختيار عدة ملفات ZIP دفعة واحدة. الملفات المكررة لا تُستبدل.")
+            Text("📁 Dossier : Pictures/GooglePhotosDownloader")
         }
     }
 }
