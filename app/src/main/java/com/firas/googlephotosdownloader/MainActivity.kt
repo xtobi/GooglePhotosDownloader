@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -12,7 +11,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -135,14 +133,10 @@ class MainActivity : ComponentActivity() {
                 val name = cursor.getString(nameCol) ?: continue
                 val id = cursor.getLong(idCol)
                 val size = cursor.getLong(sizeCol)
-                result += TakeoutFile(ContentUrisCompat.withAppendedId(uri, id), name, size)
+                result += TakeoutFile(Uri.withAppendedPath(uri, id.toString()), name, size)
             }
         }
         return result
-    }
-
-    private object ContentUrisCompat {
-        fun withAppendedId(baseUri: Uri, id: Long): Uri = Uri.withAppendedPath(baseUri, id.toString())
     }
 
     @Composable
@@ -180,9 +174,9 @@ class MainActivity : ComponentActivity() {
                         0 -> {
                             Text("Télécharger vos photos", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(12.dp))
-                            Button(onClick = { openTakeout(); takeoutStep = 0; screen = 3 }, Modifier.fillMaxWidth()) { Text("Ouvrir Google Takeout") }
+                            Button(onClick = { openTakeout(); takeoutStep = 0; screen = 3 }, modifier = Modifier.fillMaxWidth()) { Text("Ouvrir Google Takeout") }
                             Spacer(Modifier.height(8.dp))
-                            OutlinedButton(onClick = { detected = scanDownloads(); screen = 1 }, Modifier.fillMaxWidth()) { Text("J’ai déjà téléchargé les fichiers") }
+                            OutlinedButton(onClick = { detected = scanDownloads(); screen = 1 }, modifier = Modifier.fillMaxWidth()) { Text("J’ai déjà téléchargé les fichiers") }
                         }
                         1 -> {
                             Text("Fichiers Google Photos", style = MaterialTheme.typography.titleMedium)
@@ -190,20 +184,20 @@ class MainActivity : ComponentActivity() {
                             if (detected.isEmpty()) {
                                 Text("Aucun fichier ZIP trouvé dans Téléchargements.")
                                 Spacer(Modifier.height(12.dp))
-                                Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("Sélectionner les fichiers ZIP") }
+                                Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("Sélectionner les fichiers ZIP") }
                             } else {
                                 Text("${detected.size} fichier(s) ZIP trouvé(s).")
                                 Spacer(Modifier.height(8.dp))
                                 LazyColumn(Modifier.height(180.dp)) { items(detected) { file -> Text("• ${file.name} — ${formatBytes(file.size)}") } }
                                 Spacer(Modifier.height(12.dp))
-                                Button(enabled = !running, onClick = { selected = detected.map { it.uri }; screen = 2 }, Modifier.fillMaxWidth()) { Text("Utiliser ces fichiers") }
+                                Button(enabled = !running, onClick = { selected = detected.map { it.uri }; screen = 2 }, modifier = Modifier.fillMaxWidth()) { Text("Utiliser ces fichiers") }
                             }
                         }
                         2 -> {
                             Text("Prêt", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(8.dp)); Text("${selected.size} fichier(s) sélectionné(s).")
                             Spacer(Modifier.height(12.dp))
-                            OutlinedButton(enabled = !running, onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("Modifier la sélection") }
+                            OutlinedButton(enabled = !running, onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, modifier = Modifier.fillMaxWidth()) { Text("Modifier la sélection") }
                             Spacer(Modifier.height(8.dp))
                             Button(enabled = selected.isNotEmpty() && !running, onClick = {
                                 running = true; imported = 0; skipped = 0; zipIndex = 0; totalZips = selected.size; message = "Transfert en cours…"
@@ -211,7 +205,7 @@ class MainActivity : ComponentActivity() {
                                     running = false; imported = result.imported; skipped = result.skipped
                                     message = if (result.error == null) "Transfert terminé : ${result.imported} fichier(s). ${result.skipped} déjà présent(s)." else "Transfert terminé avec quelques erreurs."
                                 }
-                            }, Modifier.fillMaxWidth()) { Text("Commencer le transfert") }
+                            }, modifier = Modifier.fillMaxWidth()) { Text("Commencer le transfert") }
                             if (running) { Spacer(Modifier.height(16.dp)); CircularProgressIndicator(); Spacer(Modifier.height(8.dp)); Text("Archive $zipIndex sur $totalZips • $imported transféré(s)") }
                             if (message.isNotEmpty() && !running) { Spacer(Modifier.height(12.dp)); Text(message) }
                         }
@@ -219,8 +213,8 @@ class MainActivity : ComponentActivity() {
                             Text("Étape ${takeoutStep + 1} / ${instructions.size}", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(18.dp)); Text(instructions[takeoutStep], style = MaterialTheme.typography.titleLarge)
                             Spacer(Modifier.height(22.dp))
-                            Button(onClick = { if (takeoutStep == instructions.lastIndex) { detected = scanDownloads(); screen = 1 } else takeoutStep++ }, Modifier.fillMaxWidth()) { Text(if (takeoutStep == instructions.lastIndex) "J’ai téléchargé les fichiers ZIP" else "Suivant") }
-                            Spacer(Modifier.height(8.dp)); OutlinedButton(onClick = { screen = 0 }, Modifier.fillMaxWidth()) { Text("Retour") }
+                            Button(onClick = { if (takeoutStep == instructions.lastIndex) { detected = scanDownloads(); screen = 1 } else takeoutStep++ }, modifier = Modifier.fillMaxWidth()) { Text(if (takeoutStep == instructions.lastIndex) "J’ai téléchargé les fichiers ZIP" else "Suivant") }
+                            Spacer(Modifier.height(8.dp)); OutlinedButton(onClick = { screen = 0 }, modifier = Modifier.fillMaxWidth()) { Text("Retour") }
                         }
                     }
                 }
