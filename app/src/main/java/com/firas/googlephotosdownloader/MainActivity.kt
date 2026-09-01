@@ -157,7 +157,7 @@ class MainActivity : ComponentActivity() {
             "Appuyez sur « Tout désélectionner ».",
             "Cochez « Google Photos ».",
             "Appuyez sur « Tous les albums photo inclus ».",
-            "Faites défiler vers le bas.",
+            "أهبط لوطا بالكُل .",
             "Appuyez sur « Étape suivante ».",
             "Choisissez « Une seule exportation ».",
             "Appuyez sur « Créer une exportation ».",
@@ -174,7 +174,7 @@ class MainActivity : ComponentActivity() {
                         0 -> {
                             Text("Télécharger vos photos", style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.height(12.dp))
-                            Button(onClick = { openTakeout(); takeoutStep = 0; screen = 3 }, modifier = Modifier.fillMaxWidth()) { Text("Ouvrir Google Takeout") }
+                            Button(onClick = { openTakeout(); takeoutStep = 0; screen = 3 }, modifier = Modifier.fillMaxWidth()) { Text("حِل Google Takeout") }
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(onClick = { detected = scanDownloads(); screen = 1 }, modifier = Modifier.fillMaxWidth()) { Text("J’ai déjà téléchargé les fichiers") }
                         }
