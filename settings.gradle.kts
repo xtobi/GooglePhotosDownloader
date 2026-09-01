@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GooglePhotosDownloader"
+rootProject.name = "PachaFoto"
 include(":app")
