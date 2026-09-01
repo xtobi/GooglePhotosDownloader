@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -64,7 +63,7 @@ class MainActivity : ComponentActivity() {
                                         val values = ContentValues().apply {
                                             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
                                             put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/GooglePhotosDownloader")
+                                            put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/الباشا")
                                             put(MediaStore.MediaColumns.IS_PENDING, 1)
                                         }
                                         val output = contentResolver.insert(collection, values)
@@ -96,7 +95,7 @@ class MainActivity : ComponentActivity() {
         val projection = arrayOf(MediaStore.MediaColumns.DISPLAY_NAME)
         val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ? AND ${MediaStore.MediaColumns.RELATIVE_PATH} = ?"
         fun available(name: String): Boolean {
-            val args = arrayOf(name, "Pictures/GooglePhotosDownloader/")
+            val args = arrayOf(name, "Pictures/الباشا/")
             contentResolver.query(collection, projection, selection, args, null)?.use { if (it.moveToFirst()) return false }
             return true
         }
@@ -129,63 +128,61 @@ class MainActivity : ComponentActivity() {
         var failed by remember { mutableIntStateOf(0) }
         var currentZip by remember { mutableIntStateOf(0) }
         var totalZips by remember { mutableIntStateOf(0) }
-        var message by remember { mutableStateOf("") }
 
         val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
             selected = uris
             done = false
-            if (uris.isNotEmpty()) message = "${uris.size} fichier(s) sélectionné(s)."
         }
 
         Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Top) {
             Text("الباشا", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(8.dp))
-            Text("Transférer vos photos et vidéos sur votre téléphone")
+            Text("نقل صورك وفيديوهاتك إلى الهاتف")
             Spacer(Modifier.height(24.dp))
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(20.dp)) {
                     if (done) {
-                        Text("✅ Transfert terminé", style = MaterialTheme.typography.titleLarge)
+                        Text("تم النقل بنجاح", style = MaterialTheme.typography.titleLarge)
                         Spacer(Modifier.height(16.dp))
-                        Text("$photos photos")
-                        Text("$videos vidéos")
-                        Text("$imported fichiers transférés avec succès")
-                        if (skipped > 0) Text("$skipped fichiers déjà présents — ignorés")
-                        if (failed > 0) Text("$failed fichiers n’ont pas pu être transférés")
+                        Text("$photos صورة")
+                        Text("$videos فيديو")
+                        Text("$imported ملف تم نقله")
+                        if (skipped > 0) Text("$skipped ملف موجود من قبل — تم تجاهله")
+                        if (failed > 0) Text("$failed ملف لم يتم نقله")
                         Spacer(Modifier.height(20.dp))
-                        Button(onClick = { done = false; selected = emptyList(); message = "" }, Modifier.fillMaxWidth()) { Text("Nouveau transfert") }
+                        Button(onClick = { done = false; selected = emptyList() }, Modifier.fillMaxWidth()) { Text("نقل جديد") }
                     } else if (running) {
-                        Text("Transfert en cours…", style = MaterialTheme.typography.titleLarge)
+                        Text("جاري نقل الملفات…", style = MaterialTheme.typography.titleLarge)
                         Spacer(Modifier.height(16.dp))
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                         Spacer(Modifier.height(12.dp))
-                        Text("Archive $currentZip sur $totalZips")
-                        Text("$imported fichiers transférés")
-                        Text("$photos photos • $videos vidéos")
+                        Text("الملف $currentZip من $totalZips")
+                        Text("$imported ملف تم نقله")
+                        Text("$photos صورة • $videos فيديو")
                     } else {
-                        Text("Sélectionnez votre fichier Takeout", style = MaterialTheme.typography.titleMedium)
+                        Text("اختر ملف Takeout", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(12.dp))
-                        Text("Choisissez le ou les fichiers ZIP téléchargés depuis Google Takeout.")
+                        Text("اختر ملف ZIP الذي نزلته من Google Takeout.")
                         Spacer(Modifier.height(18.dp))
-                        Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("Choisir le fichier Takeout") }
+                        Button(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("اختيار ملف Takeout") }
                         if (selected.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
-                            Text("${selected.size} fichier(s) sélectionné(s).")
+                            Text("تم اختيار ${selected.size} ملف")
                             Spacer(Modifier.height(8.dp))
                             Button(onClick = {
                                 running = true; done = false; imported = 0; photos = 0; videos = 0; skipped = 0; failed = 0; currentZip = 0; totalZips = selected.size
                                 extractTakeout(selected, { zip, total, count, photoCount, videoCount -> currentZip = zip; totalZips = total; imported = count; photos = photoCount; videos = videoCount }) { result ->
-                                    running = false; done = true; imported = result.imported; photos = result.photos; videos = result.videos; skipped = result.skipped; failed = result.failed; message = result.error ?: ""
+                                    running = false; done = true; imported = result.imported; photos = result.photos; videos = result.videos; skipped = result.skipped; failed = result.failed
                                 }
-                            }, Modifier.fillMaxWidth()) { Text("Commencer le transfert") }
+                            }, Modifier.fillMaxWidth()) { Text("بدء نقل الصور") }
                             Spacer(Modifier.height(8.dp))
-                            OutlinedButton(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("Modifier la sélection") }
+                            OutlinedButton(onClick = { picker.launch(arrayOf("application/zip", "application/octet-stream")) }, Modifier.fillMaxWidth()) { Text("تغيير الملف") }
                         }
                     }
                 }
             }
             Spacer(Modifier.height(20.dp))
-            Text("📁 Pictures/GooglePhotosDownloader")
+            Text("📁 Pictures/الباشا")
         }
     }
 }
